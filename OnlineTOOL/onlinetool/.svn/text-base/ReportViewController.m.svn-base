@@ -1,0 +1,780 @@
+//
+//  ReportViewController.m
+//  onlinetool
+//
+//  Created by apple on 9/24/11.
+//  Copyright 2011 fgbfg. All rights reserved.
+//
+
+#import "ReportViewController.h"
+
+
+@implementation ReportViewController
+
+@synthesize u_name,u_pwd,mysiteArr,webService,clientname,myGraphArr;
+
+
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    // Do any additional setup after loading the view from its nib.
+    
+    self.title = @"Reports";
+    dateView.hidden = TRUE;
+    
+    realtimeview.hidden = FALSE;
+    detailview.hidden = TRUE;
+    summaryview.hidden = TRUE;
+	//mysiteArr =[[NSMutableArray alloc]initWithObjects:@"site1",@"site2",@"site3",@"site4",@"site5",nil];
+	myMartixArr = [[NSMutableArray alloc]initWithObjects:@"Clicks",@"Orders",@"Revenue",nil];
+	myMartixDetailArr = [[NSMutableArray alloc]initWithObjects:@"Clicks",@"Gross Spend",@"Orders",@"Revenue",@"A to S",nil];
+	myDateArr =[[NSMutableArray alloc]initWithObjects:@"yesterday",@"7 daysdaily",@"14 days daily"
+				,@"30 days daily",@"60 days daily",nil];
+    subtblarr = [[NSMutableArray alloc]initWithObjects:@"Data-1",@"Data-2",@"Data-3",@"Data-4",@"Data-5", nil];
+    subsegtblarr = [[NSMutableArray alloc]initWithObjects:@"Data-1",@"Data-2",@"Data-3",@"Data-4",@"Data-5", nil];
+
+	UIBarButtonItem *homeButton = [[UIBarButtonItem alloc] initWithTitle:@"Site" style:UIBarButtonItemStyleBordered target:self action:@selector(selectSite:)];
+	[self.navigationItem setRightBarButtonItem:homeButton];
+	[homeButton release];
+	
+	appDelegate = (onlinetoolAppDelegate *) [[UIApplication sharedApplication] delegate];
+	
+	[self CgetRealTimePerformanceDataWS];
+	
+	refreshArr = [[NSMutableArray alloc]initWithObjects:@"5",@"10",@"15",nil];
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+	self.navigationController.navigationBar.hidden = FALSE;
+	
+}
+
+#pragma mark  set UserName & Password
+
+-(void)setValueUname:(NSString*)uname Pwd:(NSString*)pwd Client:(NSString*)client
+{
+	self.u_name = uname;
+	self.u_pwd = pwd;
+	self.clientname = client;
+}
+
+
+#pragma mark  Web service - prepareToCallWS
+
+
+-(void)CgetRealTimePerformanceDataWS {
+	
+	
+	[AlertHandler showAlertForProcess];
+	[self performSelector:@selector(CgetRealTimePerformanceData) withObject:nil afterDelay:0.01];
+	
+}
+
+-(void)prepareToCallgetClientSiteWS {
+	
+	
+	[AlertHandler showAlertForProcess];
+	[self performSelector:@selector(callgetClientSiteWS) withObject:nil afterDelay:0.01];
+	
+}
+
+-(void)CgetRealTimePerformanceData{
+	
+	WebService *webservice = (WebService *)[[WebService alloc] initWithDelegate:self];
+	self.webService = webservice;
+	[webservice release];
+	
+	//NSString *a1 = @"aarp";
+	//	NSString *a2 = @"aarp2009";
+	
+	NSMutableDictionary *webEventDict = [appDelegate.webDict objectForKey:@"CgetRealTimePerformanceData"];
+	//NSString *request = [[webEventDict objectForKey:@"envelope"],a1,a2]; 
+	NSString *request = [NSString stringWithFormat:[webEventDict objectForKey:@"envelope"],self.clientname];
+	
+	NSString *soapAction = [webEventDict objectForKey:@"soapAction"];
+	[webService callWebSetvice:request withSoapAction:soapAction];
+}
+
+
+
+-(void)callgetClientSiteWS{
+	
+	WebService *webservice = (WebService *)[[WebService alloc] initWithDelegate:self];
+	self.webService = webservice;
+	[webservice release];
+	
+	//NSString *a1 = @"aarp";
+	//	NSString *a2 = @"aarp2009";
+	
+	NSMutableDictionary *webEventDict = [appDelegate.webDict objectForKey:@"CgetSites"];
+	//NSString *request = [[webEventDict objectForKey:@"envelope"],a1,a2]; 
+	NSString *request = [NSString stringWithFormat:[webEventDict objectForKey:@"envelope"],self.clientname,self.u_name,self.u_pwd];
+	
+	NSString *soapAction = [webEventDict objectForKey:@"soapAction"];
+	[webService callWebSetvice:request withSoapAction:soapAction];
+}
+
+
+
+
+#pragma mark -
+#pragma mark Common Connection Finish
+
+
+-(void)connectionFinish:(NSString*)strResponse{
+	
+	NSError *error = nil;
+	CXMLDocument *doc = [[[CXMLDocument alloc] initWithXMLString:strResponse
+														 options:0 error:&error]autorelease];
+	if(!doc){
+		[AlertHandler hideAlert];
+		//[MessageAlertView showAlert:AlertName message:@"Unknown error." delegate:self];
+		return;
+	}
+	
+	else if (CgetSitesflag == TRUE)
+	{
+		NSArray *nodes = [webService nodesForXPath:@"//Sites" MainNode:doc nameSpace:nil Error:&error];	
+		NSMutableArray * eventBufferArray = [[NSMutableArray alloc] init];
+		
+		for(CXMLNode *node in nodes){
+			NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+			
+			for (int i=0; i<[node childCount]; i++) {
+				[dict setValue:[[node childAtIndex:i]stringValue] forKey:[[node childAtIndex:i]name]];
+			}
+			[eventBufferArray addObject:dict];
+			[dict release];
+		}
+		
+		
+		
+		NSSortDescriptor *sortDescriptor1 = [[NSSortDescriptor alloc] initWithKey:@"Name" ascending:YES selector:@selector(caseInsensitiveCompare:)];
+		[eventBufferArray sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor1]];
+		[sortDescriptor1 release];
+		self.mysiteArr = eventBufferArray;
+		//[tblUserName reloadData];
+		[eventBufferArray release];
+		
+		[AlertHandler hideAlert];
+		flag = TRUE;
+		[self selectSite:nil];
+		
+		if ([self.mysiteArr count]!=0) 
+		{
+			//[mytabel reloadData];
+		}
+	}
+	
+	else
+	{
+		NSArray *nodes = [webService nodesForXPath:[NSString stringWithFormat:@"//%@",self.clientname] MainNode:doc nameSpace:nil Error:&error];	
+		NSMutableArray * eventBufferArray = [[NSMutableArray alloc] init];
+		
+		for(CXMLNode *node in nodes){
+			NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+			
+			for (int i=0; i<[node childCount]; i++) {
+				[dict setValue:[[node childAtIndex:i]stringValue] forKey:[[node childAtIndex:i]name]];
+			}
+			[eventBufferArray addObject:dict];
+			[dict release];
+		}
+		
+		
+		
+		NSSortDescriptor *sortDescriptor1 = [[NSSortDescriptor alloc] initWithKey:@"Name" ascending:YES selector:@selector(caseInsensitiveCompare:)];
+		[eventBufferArray sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor1]];
+		[sortDescriptor1 release];
+		self.myGraphArr = eventBufferArray;
+		
+		NSLog(@"data : %@",self.myGraphArr);
+		//[tblUserName reloadData];
+		[eventBufferArray release];
+		
+		[AlertHandler hideAlert];
+		
+		
+	}
+}
+
+
+-(void)connectionError:(NSError*)err{
+	[AlertHandler hideAlert];
+}
+
+
+
+
+#pragma mark -
+#pragma mark action sheet
+//actionsheet delegates
+
+- (NSString *)pickerView:(UIPickerView *)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component;
+
+{
+    
+    if(pickerView == pickerViewSite)
+    {
+        if (component==0) 
+        {
+            return [[self.mysiteArr valueForKey:@"Site"]objectAtIndex:row];
+        }
+    }
+	if(pickerView == pickerViewMatrix)
+    {
+        if (component==0) 
+        {
+            return [myMartixArr objectAtIndex:row];
+        }
+    }
+	if(pickerView == pickerViewDate)
+    {
+        if (component==0) 
+        {
+            return [myDateArr objectAtIndex:row];
+        }
+    }
+	if(pickerView == pickerViewRefresh)
+    {
+        if (component==0) 
+        {
+            return [refreshArr objectAtIndex:row];
+        }
+    }
+	if(pickerView == pickerViewMatrixDetail)
+    {
+        if (component==0) 
+        {
+            return [myMartixDetailArr objectAtIndex:row];
+        }
+    }
+	
+	
+	return 0;
+	
+}
+
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView;
+{
+
+        return 1;
+    
+}
+- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component
+{
+    
+    
+    if (pickerView == pickerViewSite) 
+    {
+		ViewSiteFlag = TRUE;
+        self.navigationItem.rightBarButtonItem.title=[NSString stringWithFormat:@"%@",[[self.mysiteArr valueForKey:@"Site"]objectAtIndex:row]];
+	}
+	if (pickerView == pickerViewMatrix) 
+    {
+		if(isDetail)
+			[matrics_btndetail setTitle:[NSString stringWithFormat:@"%@",[myMartixArr objectAtIndex:row]] forState:UIControlStateNormal];
+		else		
+		
+        [matrics_btn setTitle:[NSString stringWithFormat:@"%@",[myMartixArr objectAtIndex:row]] forState:UIControlStateNormal];
+    }
+	if (pickerView == pickerViewDate) 
+    {
+		
+			
+			[date_btn setTitle:[NSString stringWithFormat:@"%@",[myDateArr objectAtIndex:row]] forState:UIControlStateNormal];
+    }
+	if (pickerView == pickerViewRefresh) 
+    {
+		
+		
+		//[date_btn setTitle:[NSString stringWithFormat:@"%@",[myDateArr objectAtIndex:row]] forState:UIControlStateNormal];
+    }
+	if (pickerView == pickerViewMatrixDetail) 
+    {
+		
+		
+		[matrics_btndetail setTitle:[NSString stringWithFormat:@"%@",[myMartixDetailArr objectAtIndex:row]] forState:UIControlStateNormal];
+    }
+}
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component;
+
+{
+    
+    if(pickerView == pickerViewSite)
+    {
+        if (component==0) 
+        {
+            return [self.mysiteArr count];
+        }
+    }
+	if(pickerView == pickerViewMatrix)
+    {
+        if (component==0) 
+        {
+            return [myMartixArr count];
+        }
+    }
+	if(pickerView == pickerViewDate)
+    {
+        if (component==0) 
+        {
+            return [myDateArr count];
+        }
+    }
+	if(pickerView == pickerViewRefresh)
+    {
+        if (component==0) 
+        {
+            return [refreshArr count];
+        }
+    }
+	if(pickerView == pickerViewMatrixDetail)
+    {
+        if (component==0) 
+        {
+            return [myMartixDetailArr count];
+        }
+    }
+	return 0;
+}
+
+-(void)dismissActionSheetsite{    
+    
+    if (!ViewSiteFlag) 
+    {
+       // if ([self.navigationController.navigationItem.rightBarButtonItem.title isEqualToString:@""]) 
+//        {
+			self.navigationItem.rightBarButtonItem.title =[NSString stringWithFormat:@"%@",[[self.mysiteArr valueForKey:@"Site"]objectAtIndex:0]];
+       // }
+    }
+	actionSheetSite.hidden =TRUE;
+	actionSheetSite = nil;
+	[actionSheetSite release];
+}
+
+-(void)dismissActionSheetRefresh{    
+    
+    
+	actionSheetRefresh.hidden =TRUE;
+	actionSheetRefresh = nil;
+	[actionSheetRefresh release];
+}
+
+-(void)dismissActionSheetmatrix{
+	actionSheetMatrix.hidden =TRUE;
+	actionSheetMatrix = nil;
+	[actionSheetMatrix release];
+	
+}
+-(void)dismissActionSheetdate{
+	actionSheetDate.hidden =TRUE;
+	actionSheetDate = nil;
+	[actionSheetDate release];
+	
+}
+-(void)dismissActionSheetmatrixDetail{
+	actionSheetMatrixDetail.hidden =TRUE;
+	actionSheetMatrixDetail = nil;
+	[actionSheetMatrixDetail release];
+	
+}
+-(IBAction)selectSite:(id)sender{
+	
+	if (flag == FALSE)
+	{
+		CgetSitesflag = TRUE;
+		[self prepareToCallgetClientSiteWS];
+	}
+	else
+	{
+		
+		if (!actionSheetSite) 
+		{
+				actionSheetSite = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
+				[actionSheetSite setActionSheetStyle:UIActionSheetStyleBlackTranslucent];
+				
+				CGRect pickerFrame;
+				
+					pickerFrame = CGRectMake(0, 40, 320, 200);
+				
+				pickerViewSite = [[UIPickerView alloc] initWithFrame:pickerFrame];
+				pickerViewSite.showsSelectionIndicator = YES;
+				pickerViewSite.userInteractionEnabled = TRUE;
+				pickerViewSite.dataSource = self;
+				pickerViewSite.delegate = self;
+				[actionSheetSite addSubview:pickerViewSite];
+				
+				UISegmentedControl *closeButton = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObject:@"Close"]];
+				closeButton.momentary = YES; 			
+				closeButton.frame = CGRectMake(260, 7.0f, 50.0f, 30.0f);
+				
+				closeButton.segmentedControlStyle = UISegmentedControlStyleBar;
+				closeButton.tintColor = [UIColor blackColor];
+				[closeButton addTarget:self action:@selector(dismissActionSheetsite) forControlEvents:UIControlEventValueChanged];
+				[actionSheetSite addSubview:closeButton];
+				[closeButton release];
+				
+				CGRect frame;				
+				frame = CGRectMake(self.view.frame.origin.x, 160, 480.0f,300.0f);
+				
+				[actionSheetSite setFrame:frame]; 
+				[self.view addSubview:actionSheetSite];
+		}	
+			//	return NO;
+	}
+		
+	
+}
+-(IBAction)selectMatrics:(id)sender{
+	if(sender ==matrics_btndetail)
+		isDetail = TRUE;
+	else {
+		isDetail =FALSE;
+	}
+	
+	if (!actionSheetMatrix) 
+	{
+
+	actionSheetMatrix = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
+	[actionSheetMatrix setActionSheetStyle:UIActionSheetStyleBlackTranslucent];
+	
+	CGRect pickerFrame;
+	
+	pickerFrame = CGRectMake(0, 40, 320, 200);
+	
+	pickerViewMatrix = [[UIPickerView alloc] initWithFrame:pickerFrame];
+	pickerViewMatrix.showsSelectionIndicator = YES;
+	pickerViewMatrix.userInteractionEnabled = TRUE;
+	pickerViewMatrix.dataSource = self;
+	pickerViewMatrix.delegate = self;
+	[actionSheetMatrix addSubview:pickerViewMatrix];
+	
+	UISegmentedControl *closeButton = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObject:@"Close"]];
+	closeButton.momentary = YES; 			
+	closeButton.frame = CGRectMake(260, 7.0f, 50.0f, 30.0f);
+	
+	closeButton.segmentedControlStyle = UISegmentedControlStyleBar;
+	closeButton.tintColor = [UIColor blackColor];
+	[closeButton addTarget:self action:@selector(dismissActionSheetmatrix) forControlEvents:UIControlEventValueChanged];
+	[actionSheetMatrix addSubview:closeButton];
+	[closeButton release];
+	
+	CGRect frame;				
+	frame = CGRectMake(self.view.frame.origin.x, 160, 480.0f,300.0f);
+	
+	[actionSheetMatrix setFrame:frame]; 
+	[self.view addSubview:actionSheetMatrix];
+	}
+	
+}
+
+
+-(IBAction)selectMatricscDetail:(id)sender{
+	
+	if (!actionSheetMatrixDetail) 
+	{
+		
+		actionSheetMatrixDetail = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
+		[actionSheetMatrixDetail setActionSheetStyle:UIActionSheetStyleBlackTranslucent];
+		
+		CGRect pickerFrame;
+		
+		pickerFrame = CGRectMake(0, 40, 320, 200);
+		
+		pickerViewMatrixDetail = [[UIPickerView alloc] initWithFrame:pickerFrame];
+		pickerViewMatrixDetail.showsSelectionIndicator = YES;
+		pickerViewMatrixDetail.userInteractionEnabled = TRUE;
+		pickerViewMatrixDetail.dataSource = self;
+		pickerViewMatrixDetail.delegate = self;
+		[actionSheetMatrixDetail addSubview:pickerViewMatrixDetail];
+		
+		UISegmentedControl *closeButton = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObject:@"Close"]];
+		closeButton.momentary = YES; 			
+		closeButton.frame = CGRectMake(260, 7.0f, 50.0f, 30.0f);
+		
+		closeButton.segmentedControlStyle = UISegmentedControlStyleBar;
+		closeButton.tintColor = [UIColor blackColor];
+		[closeButton addTarget:self action:@selector(dismissActionSheetmatrixDetail) forControlEvents:UIControlEventValueChanged];
+		[actionSheetMatrixDetail addSubview:closeButton];
+		[closeButton release];
+		
+		CGRect frame;				
+		frame = CGRectMake(self.view.frame.origin.x, 160, 480.0f,300.0f);
+		
+		[actionSheetMatrixDetail setFrame:frame]; 
+		[self.view addSubview:actionSheetMatrixDetail];
+	}
+	
+}
+#pragma mark -
+#pragma mark segmentedControlStyle
+
+-(IBAction)segmentedControlIndexChanged
+{
+	switch(mysegment.selectedSegmentIndex) 
+	{
+		case 0:
+			realtimeview.hidden = FALSE;
+            detailview.hidden = TRUE;
+            summaryview.hidden = TRUE;
+			dateView.hidden = TRUE;
+            //[SEGCntrlContacts setImage:[UIImage imageNamed:@"contactsB.png"] forSegmentAtIndex:0];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"inviteW.png"] forSegmentAtIndex:1];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"StatusW.png"]forSegmentAtIndex:2];
+			break;
+            
+            
+		case 1:
+            realtimeview.hidden = TRUE;
+            detailview.hidden = FALSE;
+            summaryview.hidden = TRUE;
+            dateView.hidden = FALSE;
+            [mysubsegment setSelectedSegmentIndex:0];
+            
+            subgraphview.hidden = FALSE;
+            subtableview.hidden = TRUE;
+            
+			
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"contactsW.png"] forSegmentAtIndex:0];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"inviteB.png"] forSegmentAtIndex:1];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"StatusW.png"]forSegmentAtIndex:2];
+			break;
+            
+        case 2:
+            realtimeview.hidden = TRUE;
+            detailview.hidden = TRUE;
+            summaryview.hidden = FALSE;
+            dateView.hidden = FALSE;
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"contactsW.png"] forSegmentAtIndex:0];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"inviteB.png"] forSegmentAtIndex:1];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"StatusW.png"]forSegmentAtIndex:2];
+			break;
+	}
+}
+-(IBAction)onDateRange:(id)sender{
+	
+	if (!actionSheetDate) 
+	
+	
+	{
+		
+	
+	
+	actionSheetDate = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
+	[actionSheetDate setActionSheetStyle:UIActionSheetStyleBlackTranslucent];
+	
+	CGRect pickerFrame;
+	
+	pickerFrame = CGRectMake(0, 40, 320, 200);
+	
+	pickerViewDate = [[UIPickerView alloc] initWithFrame:pickerFrame];
+	pickerViewDate.showsSelectionIndicator = YES;
+	pickerViewDate.userInteractionEnabled = TRUE;
+	pickerViewDate.dataSource = self;
+	pickerViewDate.delegate = self;
+	[actionSheetDate addSubview:pickerViewDate];
+	
+	UISegmentedControl *closeButton = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObject:@"Close"]];
+	closeButton.momentary = YES; 			
+	closeButton.frame = CGRectMake(260, 7.0f, 50.0f, 30.0f);
+	
+	closeButton.segmentedControlStyle = UISegmentedControlStyleBar;
+	closeButton.tintColor = [UIColor blackColor];
+	[closeButton addTarget:self action:@selector(dismissActionSheetdate) forControlEvents:UIControlEventValueChanged];
+	[actionSheetDate addSubview:closeButton];
+	[closeButton release];
+	
+	CGRect frame;				
+	frame = CGRectMake(self.view.frame.origin.x, 160, 480.0f,300.0f);
+	
+	[actionSheetDate setFrame:frame]; 
+	[self.view addSubview:actionSheetDate];
+		
+	}
+	
+}
+
+
+-(IBAction)onRefreshSetting:(id)sender{
+	
+	if (!actionSheetRefresh) 
+		
+		
+	{
+		
+		
+		
+		actionSheetRefresh = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
+		[actionSheetRefresh setActionSheetStyle:UIActionSheetStyleBlackTranslucent];
+		
+		CGRect pickerFrame;
+		
+		pickerFrame = CGRectMake(0, 40, 320, 200);
+		
+		pickerViewRefresh = [[UIPickerView alloc] initWithFrame:pickerFrame];
+		pickerViewRefresh.showsSelectionIndicator = YES;
+		pickerViewRefresh.userInteractionEnabled = TRUE;
+		pickerViewRefresh.dataSource = self;
+		pickerViewRefresh.delegate = self;
+		[actionSheetRefresh addSubview:pickerViewRefresh];
+		
+		UISegmentedControl *closeButton = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObject:@"Close"]];
+		closeButton.momentary = YES; 			
+		closeButton.frame = CGRectMake(260, 7.0f, 50.0f, 30.0f);
+		
+		closeButton.segmentedControlStyle = UISegmentedControlStyleBar;
+		closeButton.tintColor = [UIColor blackColor];
+		[closeButton addTarget:self action:@selector(dismissActionSheetRefresh) forControlEvents:UIControlEventValueChanged];
+		[actionSheetRefresh addSubview:closeButton];
+		[closeButton release];
+		
+		CGRect frame;				
+		frame = CGRectMake(self.view.frame.origin.x, 160, 480.0f,300.0f);
+		
+		[actionSheetRefresh setFrame:frame]; 
+		[self.view addSubview:actionSheetRefresh];
+		
+	}
+	
+}
+
+-(IBAction)subsegmentedControlIndexChanged
+{
+    switch(mysubsegment.selectedSegmentIndex) 
+	{
+		case 0:
+            
+            subgraphview.hidden = FALSE;
+            subtableview.hidden = TRUE;
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"contactsB.png"] forSegmentAtIndex:0];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"inviteW.png"] forSegmentAtIndex:1];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"StatusW.png"]forSegmentAtIndex:2];
+			break;
+            
+            
+		case 1:
+            subgraphview.hidden = TRUE;
+            subtableview.hidden = FALSE;
+			
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"contactsW.png"] forSegmentAtIndex:0];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"inviteB.png"] forSegmentAtIndex:1];
+			//[SEGCntrlContacts setImage:[UIImage imageNamed:@"StatusW.png"]forSegmentAtIndex:2];
+			break;
+
+    }
+}
+
+
+
+#pragma mark -
+#pragma mark tableView dataSource
+
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 1;
+}
+
+
+// Customize the number of rows in the table view.
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    
+    if (tableView == subsegmnttable)
+    {
+        return [subsegtblarr count];
+    }
+    
+    if (tableView == segmnttable)
+    {
+        return [subtblarr count];
+    }
+    
+    return 0;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+	
+	return 44;
+}
+
+// Customize the appearance of table view cells.
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    static NSString *CellIdentifier = @"Cell";
+    
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+    if (cell == nil) {
+        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
+    }
+    // Configure the cell.
+    
+    if (tableView == subsegmnttable) {
+        cell.textLabel.text = [subsegtblarr objectAtIndex:indexPath.row];
+    }
+    
+    if (tableView == segmnttable) {
+        cell.textLabel.text = [subtblarr objectAtIndex:indexPath.row];
+    }
+    	
+    return cell;
+}
+
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+        
+}
+
+- (void)didReceiveMemoryWarning
+{
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc that aren't in use.
+}
+
+#pragma mark - View lifecycle
+
+
+
+- (void)viewDidUnload
+{
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    // Return YES for supported orientations
+    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+}
+
+
+#pragma mark - dealloc
+
+-(void)dealloc
+{
+	[super dealloc];
+	[self.mysiteArr release];
+	[self.u_name release];
+	[self.u_pwd release];
+	[self.webService release];
+	[self.clientname release];
+	
+}
+
+@end

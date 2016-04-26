@@ -1,0 +1,80 @@
+//
+//  LoginViewController.m
+//  Leopard
+//
+//  Created by OPENXCELL TECHNOLABS on 8/25/11.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+//
+
+#import "LoginViewController.h"
+
+
+
+@implementation LoginViewController
+
+-(void)viewDidLoad
+{
+	[super viewDidLoad];
+    
+    self.navigationItem.title = @"Welcome";
+	  
+	
+	logintext.text = @"aarp";
+	passwordtext.text = @"aarp2009";
+	
+}
+
+-(IBAction)signup_btnclicked:(id)sender
+{
+    userregister *obj_signup = [[userregister alloc]initWithNibName:@"userregister" bundle:nil];
+    [self presentModalViewController:obj_signup animated:YES];
+    
+    
+}
+-(IBAction)login_btnclicked:(id)sender
+{
+    
+    clientviewcontroller *obj_login = [[clientviewcontroller alloc]initWithNibName:@"clientviewcontroller" bundle:nil];
+    
+	[obj_login setValueUname:logintext.text Pwd:passwordtext.text];
+	[UIView beginAnimations:nil context:NULL];
+	[UIView setAnimationDuration:1.0];
+	[UIView setAnimationTransition:UIViewAnimationTransitionFlipFromRight forView:self.navigationController.view cache:NO];
+	[self.navigationController pushViewController:obj_login animated:YES];
+	[[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
+	[UIView commitAnimations];
+	
+    
+}
+
+-(BOOL)textFieldShouldReturn:(UITextField *)textField{
+	[textField resignFirstResponder];
+	return YES;
+}
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    [logintext resignFirstResponder];
+    [passwordtext resignFirstResponder];
+}
+
+- (void)didReceiveMemoryWarning {
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc. that aren't in use.
+}
+
+- (void)viewDidUnload {
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+
+- (void)dealloc {
+    [super dealloc];
+}
+
+
+@end

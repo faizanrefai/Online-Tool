@@ -1,0 +1,45 @@
+//
+//  clientviewcontroller.h
+//  onlinetool
+//
+//  Created by apple on 9/24/11.
+//  Copyright 2011 fgbfg. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ReportViewController.h"
+#import "onlinetoolAppDelegate.h"
+#import "AlertHandler.h"
+#import "WebService.h"
+
+
+
+
+
+@interface clientviewcontroller : UIViewController <UITableViewDelegate , UITableViewDataSource> {
+    
+    IBOutlet UITableView *mytabel;
+
+	WebService *webService;
+	
+	onlinetoolAppDelegate *appDelegate;
+	
+    NSMutableArray *clientarr;
+	
+	NSString *u_name;
+	
+	NSString *u_pwd;
+}
+
+@property (nonatomic, retain) WebService *webService;
+@property (nonatomic, retain) NSMutableArray *clientarr;
+@property (nonatomic, retain) NSString *u_name;
+@property (nonatomic, retain) NSString *u_pwd;
+
+
+-(void)setValueUname:(NSString*)uname Pwd:(NSString*)pwd;
+-(void)prepareToCallgetClientWS;
+-(void)callgetClientWS;
+
+
+@end

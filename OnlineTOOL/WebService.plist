@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CgetClients</key>
+	<dict>
+		<key>envelope</key>
+		<string>&lt;soap:Envelope xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+  &lt;soap:Body&gt;
+    &lt;CgetClients xmlns=&quot;http://pmdigital.com/&quot;&gt;
+      &lt;u&gt;%@&lt;/u&gt;
+      &lt;p&gt;%@&lt;/p&gt;
+    &lt;/CgetClients&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</string>
+		<key>soapAction</key>
+		<string>http://pmdigital.com/CgetClients</string>
+	</dict>
+	<key>CgetSites</key>
+	<dict>
+		<key>envelope</key>
+		<string>&lt;soap:Envelope xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+  &lt;soap:Body&gt;
+    &lt;CgetSites xmlns=&quot;http://pmdigital.com/&quot;&gt;
+      &lt;client&gt;%@&lt;/client&gt;
+      &lt;u&gt;%@&lt;/u&gt;
+      &lt;p&gt;%@&lt;/p&gt;
+    &lt;/CgetSites&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</string>
+		<key>soapAction</key>
+		<string>http://pmdigital.com/CgetSites</string>
+	</dict>
+	<key>CgetDailyPerformanceData</key>
+	<dict>
+		<key>envelope</key>
+		<string>&lt;soap:Envelope xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+  &lt;soap:Body&gt;
+    &lt;CgetDailyPerformanceData xmlns=&quot;http://pmdigital.com/&quot;&gt;
+      &lt;client&gt;%@&lt;/client&gt;
+      &lt;u&gt;%@&lt;/u&gt;
+      &lt;p&gt;%@&lt;/p&gt;
+    &lt;/CgetDailyPerformanceData&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</string>
+		<key>soapAction</key>
+		<string>http://pmdigital.com/CgetDailyPerformanceData</string>
+	</dict>
+	<key>CgetRealTimePerformanceData</key>
+	<dict>
+		<key>envelope</key>
+		<string>&lt;soap:Envelope xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+  &lt;soap:Body&gt;
+    &lt;CgetRealTimePerformanceData xmlns=&quot;http://pmdigital.com/&quot;&gt;
+      &lt;client&gt;%@&lt;/client&gt;
+    &lt;/CgetRealTimePerformanceData&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</string>
+		<key>soapAction</key>
+		<string>http://pmdigital.com/CgetRealTimePerformanceData</string>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,231 @@
+//
+//  clientviewcontroller.m
+//  onlinetool
+//
+//  Created by apple on 9/24/11.
+//  Copyright 2011 fgbfg. All rights reserved.
+//
+
+#import "clientviewcontroller.h"
+
+
+@implementation clientviewcontroller
+
+
+@synthesize clientarr,webService,u_name,u_pwd;
+
+
+
+//- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+//{
+//    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+//    if (self) {
+//        // Custom initialization
+//    }
+//    return self;
+//}
+//
+//- (void)dealloc
+//{
+//    [super dealloc];
+//}
+//
+
+-(void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    //self.title = @"Clients";
+	self.navigationController.navigationBar.hidden = TRUE;
+	
+	appDelegate = (onlinetoolAppDelegate *) [[UIApplication sharedApplication] delegate];
+	
+	[self prepareToCallgetClientWS];
+	
+	
+    
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+	self.navigationController.navigationBar.hidden = TRUE;
+	
+}
+
+#pragma mark -
+
+#pragma mark  set UserName & Password
+
+-(void)setValueUname:(NSString*)uname Pwd:(NSString*)pwd
+{
+	self.u_name = uname;
+	self.u_pwd = pwd;
+}
+
+
+
+#pragma mark  Web service - prepareToCallWS
+
+
+-(void)prepareToCallgetClientWS {
+	
+	
+	[AlertHandler showAlertForProcess];
+	[self performSelector:@selector(callgetClientWS) withObject:nil afterDelay:0.01];
+	
+}
+
+-(void)callgetClientWS{
+	
+	WebService *webservice = (WebService *)[[WebService alloc] initWithDelegate:self];
+	self.webService = webservice;
+	[webservice release];
+	
+	//NSString *a1 = @"aarp";
+//	NSString *a2 = @"aarp2009";
+	
+	NSMutableDictionary *webEventDict = [appDelegate.webDict objectForKey:@"CgetClients"];
+	//NSString *request = [[webEventDict objectForKey:@"envelope"],a1,a2]; 
+	NSString *request = [NSString stringWithFormat:[webEventDict objectForKey:@"envelope"], self.u_name,self.u_pwd];
+	
+	NSString *soapAction = [webEventDict objectForKey:@"soapAction"];
+	[webService callWebSetvice:request withSoapAction:soapAction];
+}
+
+
+
+#pragma mark -
+#pragma mark Common Connection Finish
+
+
+-(void)connectionFinish:(NSString*)strResponse{
+	
+	NSError *error = nil;
+	CXMLDocument *doc = [[[CXMLDocument alloc] initWithXMLString:strResponse
+														 options:0 error:&error]autorelease];
+	if(!doc){
+		[AlertHandler hideAlert];
+		//[MessageAlertView showAlert:AlertName message:@"Unknown error." delegate:self];
+		return;
+	}
+	
+	else {
+		NSArray *nodes = [webService nodesForXPath:@"//Clients" MainNode:doc nameSpace:nil Error:&error];	
+		NSMutableArray * eventBufferArray = [[NSMutableArray alloc] init];
+		
+		for(CXMLNode *node in nodes){
+			NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+			
+			for (int i=0; i<[node childCount]; i++) {
+				[dict setValue:[[node childAtIndex:i]stringValue] forKey:[[node childAtIndex:i]name]];
+			}
+			[eventBufferArray addObject:dict];
+			[dict release];
+		}
+		
+		
+		
+		NSSortDescriptor *sortDescriptor1 = [[NSSortDescriptor alloc] initWithKey:@"Name" ascending:YES selector:@selector(caseInsensitiveCompare:)];
+		[eventBufferArray sortUsingDescriptors:[NSArray arrayWithObject:sortDescriptor1]];
+		[sortDescriptor1 release];
+		self.clientarr = eventBufferArray;
+		//[tblUserName reloadData];
+		[eventBufferArray release];
+		
+		[AlertHandler hideAlert];
+		
+		if ([self.clientarr count]!=0) 
+		{
+			[mytabel reloadData];
+		}
+	}
+}
+
+
+-(void)connectionError:(NSError*)err{
+	[AlertHandler hideAlert];
+}
+
+
+
+
+#pragma mark -
+#pragma mark Table view data source
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 1;
+}
+
+
+// Customize the number of rows in the table view.
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    
+       return [self.clientarr count];
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+	
+	return 44;
+}
+
+// Customize the appearance of table view cells.
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    static NSString *CellIdentifier = @"Cell";
+    
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+    if (cell == nil) {
+        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
+    }
+		// Configure the cell.
+    cell.textLabel.text = [[self.clientarr valueForKey:@"Client"]objectAtIndex:indexPath.row];	
+    return cell;
+}
+
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    ReportViewController *obj_report = [[ReportViewController alloc]initWithNibName:@"ReportViewController" bundle:nil];
+    
+	[obj_report setValueUname:self.u_name Pwd:self.u_pwd Client:[[self.clientarr valueForKey:@"Client"]objectAtIndex:indexPath.row]];
+	
+	[self.navigationController pushViewController:obj_report animated:YES];
+	    
+}
+
+
+#pragma mark - View lifecycle
+
+- (void)didReceiveMemoryWarning
+{
+    // Releases the view if it doesn't have a superview.
+    [super didReceiveMemoryWarning];
+    
+    // Release any cached data, images, etc that aren't in use.
+}
+
+
+- (void)viewDidUnload
+{
+    [super viewDidUnload];
+    // Release any retained subviews of the main view.
+    // e.g. self.myOutlet = nil;
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    // Return YES for supported orientations
+    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+}
+
+#pragma mark - dealloc
+
+-(void)dealloc
+{
+	[super dealloc];
+	[self.clientarr release];
+	[self.u_name release];
+	[self.u_pwd release];
+	
+}
+@end

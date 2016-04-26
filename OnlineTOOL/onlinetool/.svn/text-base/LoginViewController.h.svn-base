@@ -1,0 +1,26 @@
+//
+//  LoginViewController.h
+//  Leopard
+//
+//  Created by OPENXCELL TECHNOLABS on 8/25/11.
+//  Copyright 2011 __MyCompanyName__. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "clientviewcontroller.h"
+#import "userregister.h"
+
+
+
+@interface LoginViewController : UIViewController {
+	
+    IBOutlet UITextField *logintext;
+    IBOutlet UITextField *passwordtext;
+}
+
+
+-(IBAction)signup_btnclicked:(id)sender;
+-(IBAction)login_btnclicked:(id)sender;
+
+
+@end
